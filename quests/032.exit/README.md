@@ -22,11 +22,9 @@ Understanding `os.Exit` is important when building CLI tools and handling fatal 
 
 ### Objective
 
-In real-world applications, programs often connect to databases to fetch or store data. When a connection attempt fails, the program must exit with a specific exit code indicating the exact reason for failure.
+Programs often exit with specific codes to signal _why_ they failed — letting scripts and services react accordingly.
 
-Exit codes allow operating systems, scripts, and other programs to understand what went wrong and take appropriate action. Using meaningful exit codes is essential when building backend services, CLI tools, and infrastructure systems.
-
-Implement a function that simulates connecting to a database and exits with different exit codes depending on the connection result.
+Implement a function that simulates a database connection and exits with the appropriate code based on the result.
 
 ---
 

@@ -41,37 +41,42 @@ case "foo":
 
 ### Objective
 
-Build a `file-cli` tool that can process text files in two ways: counting lines and searching for text.
+Build a `file-cli` tool with two subcommands: counting lines and searching text in files.
 
 ### Requirements
 
-Implement the function `RunCLI(args []string) error`.
+Implement: `func RunCLI(args []string) error`
 
-The function should handle two subcommands: `count` and `search`.
+---
 
-#### 1. `count` Subcommand
+**`count` — Count lines in a file**
 
-Counts the number of lines in a file.
+|        |                                |
+| ------ | ------------------------------ |
+| Usage  | `file-cli count <filename>`    |
+| Output | `lines: <number>`              |
+| Errors | Missing file or invalid format |
 
-- **Usage**: `file-cli count <filename>`
-- **Output**: Prints `lines: <number>` to stdout.
-- **Error**: If file format is invalid or file missing, return an error.
+---
 
-#### 2. `search` Subcommand
+**`search` — Find lines matching a pattern**
 
-Searches for lines containing a specific string pattern.
+|        |                                                                           |
+| ------ | ------------------------------------------------------------------------- |
+| Usage  | `file-cli search [--case-insensitive] <pattern> <filename>`               |
+| Flag   | `--case-insensitive` (bool, default `false`) — ignores case when matching |
+| Output | Print each matching line to stdout                                        |
+| Errors | Missing arguments or unreadable file                                      |
 
-- **Usage**: `file-cli search --case-insensitive <pattern> <filename>`
-- **Flags**:
-  - `--case-insensitive` (bool): If set, case is ignored (e.g., "Foo" matches "foo"). Default is false.
-- **Output**: Prints matching lines to stdout.
-- **Error**: If arguments are missing or file cannot be read, return an error.
+---
 
-#### General Error Handling
+**General Errors**
 
-- If no subcommand is provided (args length < 2), return an error.
-- If an unknown subcommand is provided, return an error.
-- If required arguments (like filename) are missing after flags, return an error.
+| Condition                            | Behaviour    |
+| ------------------------------------ | ------------ |
+| `args` length < 2                    | Return error |
+| Unknown subcommand                   | Return error |
+| Missing filename/pattern after flags | Return error |
 
 ### Inputs
 

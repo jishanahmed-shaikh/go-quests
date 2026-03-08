@@ -16,24 +16,28 @@ Additionally, many Go programs act as **supervisors** that spin up background ch
 
 You are building the master control loop for the Multiplayer Game Server itself (following the initialization step from the previous quest). The server acts as a supervisor that spins up a background database backup worker (`workerCmd`). Your server must handle `SIGINT` gracefully to shut down the worker, and handle `SIGHUP` and `SIGUSR1` for manual administrative commands.
 
-### Requirements
+## `RunGameServer(ready chan bool, workerCmd string) error`
 
-Implement the function:
-`func RunGameServer(ready chan bool, workerCmd string) error`
+Starts a managed game server worker with graceful shutdown and signal handling.
 
-1. Use `signal.NotifyContext` with `context.Background()` to listen for `os.Interrupt` (`syscall.SIGINT`). This will be your graceful shutdown context. Defer calling its cancellation function (e.g., `defer stop()`).
-2. Create a standard signal channel (e.g. `make(chan os.Signal, 1)`) and use `signal.Notify` to register it to receive `syscall.SIGHUP` and `syscall.SIGUSR1`.
-3. Use `exec.Command` to prepare the child process using `workerCmd`. _Note: We use `Command` instead of `CommandContext` so we can manually send `SIGTERM` instead of letting Context brutally kill the process._
-4. Start the child process in the background using `cmd.Start()`. If it fails to start, return the error.
-5. Send `true` to the `ready` channel (`ready <- true`) to let the tests know you're running.
-6. Enter an infinite `for { select { ... } }` loop to handle events:
-   - When the signal channel receives `syscall.SIGHUP`: Print `"Reloading game rules..."` and continue the loop.
-   - When the signal channel receives `syscall.SIGUSR1`: Print `"Dumping player coordinates..."` and continue the loop.
-   - When the graceful shutdown context's `Done()` channel receives a value (`case <-ctx.Done():`):
-     - Print `"Shutting down worker..."`
-     - Send a `syscall.SIGTERM` to the child process using `cmd.Process.Signal(syscall.SIGTERM)`
-     - Call `cmd.Wait()` to wait for the child process to finish.
-     - Return the result of `cmd.Wait()` directly, even if it is an ExitError from the SIGTERM.
+### Steps
+
+| #   | What to do                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Create a shutdown context with `signal.NotifyContext(context.Background(), os.Interrupt / syscall.SIGINT)` — defer its `stop()`     |
+| 2   | Create a buffered signal channel (`make(chan os.Signal, 1)`) and register it for `SIGHUP` + `SIGUSR1` via `signal.Notify`           |
+| 3   | Prepare the child process with `exec.Command(workerCmd)` _(use `Command`, not `CommandContext` — shutdown is manual via `SIGTERM`)_ |
+| 4   | Start the child process with `cmd.Start()` — return error immediately if it fails                                                   |
+| 5   | Signal readiness: `ready <- true`                                                                                                   |
+| 6   | Run the event loop below ↓                                                                                                          |
+
+### Event Loop — `for { select { ... } }`
+
+| Signal / Event | Action                                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SIGHUP`       | Print `"Reloading game rules..."` → continue                                                                                                                         |
+| `SIGUSR1`      | Print `"Dumping player coordinates..."` → continue                                                                                                                   |
+| `ctx.Done()`   | Print `"Shutting down worker..."` → send `SIGTERM` via `cmd.Process.Signal(syscall.SIGTERM)` → call `cmd.Wait()` → return its result _(even if it's an `ExitError`)_ |
 
 ### Inputs
 

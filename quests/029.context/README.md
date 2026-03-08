@@ -23,31 +23,29 @@ Understanding when to use which type of context is a core Go skill:
 
 ### Objective
 
-You are building the core flow for a **Smart File Downloader**. Your CLI tool downloads large assets from a Content Delivery Network (CDN) as fast as possible. You must use all four types of contexts to orchestrate the different steps correctly.
+Implement the core orchestration flow for a **Smart File Downloader** CLI that fetches large CDN assets, using all four context types across each step.
 
 ### Requirements
 
-Implement the function:
-`func RunSmartDownloader(api *CDNAPI)`
+Implement: `func RunSmartDownloader(api *CDNAPI)`
 
-The `api` object (provided by the test suite) has four methods that you must call in this exact order, passing the correct context to each one:
+Call the following `api` methods **in order**, each with the correct context:
 
-1. **Root Context**: Create an absolute root context using `context.Background()`.
-2. **Tracing (`api.LogActivity`)**: The CDN logging system requires a trace ID to track requests.
-   - Derive a new context from the root using `context.WithValue`.
-   - Use the custom type `TraceKey("trace_id")` for the key and the string `"smart-dl-123"` for the value.
-   - Pass this value context to `api.LogActivity(ctx)`.
-3. **DNS Lookup (`api.DNSLookup`)**: Next, it does a DNS lookup to find the nearest CDN server. DNS shouldn't take more than `100ms`, so apply a timeout.
-   - Derive a new context from the root using `context.WithTimeout` with a duration of `100 * time.Millisecond`.
-   - Use `defer` to ensure the timeout's `cancel` function is eventually called (good practice to avoid memory leaks!).
-   - Pass this timeout context to `api.DNSLookup(ctx)`.
-4. **Concurrent Download (`api.DownloadChunks`)**: Next, it concurrently requests the file chunks from 3 different continent mirrors. Once the file is 100% downloaded, it needs to forcefully close the TCP connections to the other mirrors.
-   - Derive a new context from the root using `context.WithCancel`.
-   - _Note: Normally, you'd pass this context into a worker goroutine and then defer `cancel()`. For this simulated quest, we just want to verify you know how to extract the cancel func._
-   - Immediately call the `cancel()` function you just received to simulate the file finishing early.
-   - Pass the already-cancelled context into `api.DownloadChunks(ctx)`.
-5. **Verify Checksum (`api.VerifyChecksum`)**: Finally, it calls a function from a legacy cryptography library that requires a context, but hasn't fully documented its cancellation support yet.
-   - Pass a `context.TODO()` into `api.VerifyChecksum(ctx)`.
+1. **Root context**: Create with `context.Background()`.
+
+2. **`api.LogActivity(ctx)`** — attach a trace ID for CDN request tracking:
+   - Derive from root via `context.WithValue`, using key `TraceKey("trace_id")` and value `"smart-dl-123"`.
+
+3. **`api.DNSLookup(ctx)`** — DNS must resolve within 100ms:
+   - Derive from root via `context.WithTimeout(100 * time.Millisecond)`.
+   - `defer cancel()` to avoid memory leaks.
+
+4. **`api.DownloadChunks(ctx)`** — cancel connections once download completes:
+   - Derive from root via `context.WithCancel`.
+   - Immediately call `cancel()` to simulate early completion, then pass the cancelled context in.
+
+5. **`api.VerifyChecksum(ctx)`** — legacy library with unknown cancellation support:
+   - Pass `context.TODO()`.
 
 ### Inputs
 

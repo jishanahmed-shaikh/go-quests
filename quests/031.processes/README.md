@@ -15,21 +15,22 @@ The `os/exec` package provides the `Cmd` struct to execute external commands.
 
 ### Objective
 
-You are building the initialization step of a deployment CLI that validates dependencies before starting a Multiplayer Game Server. Before your tool runs, it needs to verify that a required third-party software (like `go`) is installed and is the correct version. To ensure your CLI doesn't hang if the tool malfunctions, you must also enforce a timeout using `exec.CommandContext`.
+### Objective
+
+Implement the version-checking step of a deployment CLI for a Multiplayer Game Server. Before launching, the CLI must verify that a required tool (e.g. `go`) is installed and at the correct version — with a timeout to prevent hanging.
 
 ### Requirements
 
-Implement the function:
-`func CheckToolVersion(ctx context.Context, tool string, versionString string) error`
+Implement: `func CheckToolVersion(ctx context.Context, tool string, versionString string) error`
 
-1. Use `exec.CommandContext` to prepare the execution of the `tool` with the argument `"version"`. (e.g., if the tool is `"go"`, the equivalent terminal command is `go version`). Make sure to pass the provided `ctx`!
-2. Call `.Output()` on the command to execute it and capture its standard output.
-3. If `.Output()` returns an error (which happens if the process times out, exits with a non-zero status, or the executable doesn't exist), return that error as-is, do not wrap it.
-4. Convert the returned output byte slice into a string.
-5. If the resulting string does not contain the `versionString`, return an error formatted exactly as:
+1. Use `exec.CommandContext(ctx, tool, "version")` to prepare the command.
+2. Call `.Output()` to run it and capture stdout.
+3. If `.Output()` errors (timeout, non-zero exit, missing executable), return the error as-is — no wrapping.
+4. Convert the output `[]byte` to a `string`.
+5. If the output does **not** contain `versionString`, return:
    `fmt.Errorf("version mismatch: expected %s, got %s", versionString, outputString)`
-   _(Note: The `outputString` should be the raw string returned by `.Output()`, stripped of any whitespace/newlines at the ends using `strings.TrimSpace` so the error message is clean)_.
-6. If the output string contains the `versionString`, return `nil`.
+   where `outputString` is the raw output trimmed with `strings.TrimSpace`.
+6. Otherwise, return `nil`.
 
 ### Inputs
 

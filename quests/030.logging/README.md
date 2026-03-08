@@ -20,24 +20,19 @@ You can do two powerful things to organize these JSON logs:
 
 ### Objective
 
-You are building the search tracking mechanism for an E-Commerce site. You must log the search events, handling both empty queries and valid searches, while attaching the correct structural data.
+Implement search event logging for an E-Commerce site, handling empty queries, invalid users, and valid searches with structured log data.
 
 ### Requirements
 
-Implement the function:
-`func ProcessSearch(logger *slog.Logger, reqID string, query string, userID int)`
+Implement: `func ProcessSearch(logger *slog.Logger, reqID string, query string, userID int)`
 
-1. **Create a child logger**: Derive a new logger from the provided `logger` using `.With()`. Attach the string attribute `"request_id"` with the value of `reqID`.
-2. **Log processing start**: Automatically use the child logger to log a **Debug** level message: `"processing search request"`.
-3. **Validate query**:
-   - If `query` is an empty string `""`, log a **Warning** level message: `"empty search query"`. Do not log anything else, and return immediately.
-4. **Validate userID**:
-   - If `userID` is less than 0, log an **Error** level message: `"invalid user ID"`. Do not log anything else, and return immediately.
-5. **Log valid search**:
-   - If the query is valid and user ID is valid, log an **Info** level message: `"search executed"`.
-   - Also pass two additional attributes to this Info log:
-     - The search string: key `"query"`, value `query`.
-     - A nested User object: Use `slog.Group("user", slog.Int("id", userID))` to group the user's ID under a `"user"` key.
+1. **Child logger**: Derive from `logger` using `.With()`, attaching `"request_id": reqID`.
+2. **Debug log**: Log `"processing search request"` at **Debug** level using the child logger.
+3. **Empty query**: If `query == ""`, log `"empty search query"` at **Warn** level and return.
+4. **Invalid userID**: If `userID < 0`, log `"invalid user ID"` at **Error** level and return.
+5. **Valid search**: Log `"search executed"` at **Info** level with two attributes:
+   - `"query"`: the query string.
+   - A grouped user object: `slog.Group("user", slog.Int("id", userID))`.
 
 ### Inputs
 

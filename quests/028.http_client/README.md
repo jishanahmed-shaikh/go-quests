@@ -24,41 +24,51 @@ Finally, dealing with networks often means dealing with latency. If you need to 
 
 ### Objective
 
-You will build an **Inventory Sync Client** that interacts with the Product Catalog API you built in the previous quest.
+Build an **Inventory Sync Client** that communicates with a Product Catalog API across four functions.
 
 ### Requirements
 
-Implement the following functions:
+**All functions** use a custom client with a 5-second timeout: `&http.Client{Timeout: 5 * time.Second}`
 
-**1. `FetchProducts(apiURL string) ([]Product, error)`**
+---
 
-- First, instantiate a custom client with a 5-second timeout: `client := &http.Client{Timeout: 5 * time.Second}`
-- Make a `GET` request to `apiURL + "/products"` using your custom `client`.
-- If the status isn't 200 OK, return an error.
-- Decode the JSON response into a list of `Product`s and return it.
+**`FetchProducts(apiURL string) ([]Product, error)`**
 
-**2. `CreateProduct(apiURL string, p Product) error`**
+| Step | Action                                  |
+| ---- | --------------------------------------- |
+| 1    | `GET` → `apiURL + "/products"`          |
+| 2    | Return error if status ≠ 200 OK         |
+| 3    | Decode JSON into `[]Product` and return |
 
-- Instantiate the custom client with a 5-second timeout.
-- Encode the given `Product` `p` into JSON. Use `bytes.Buffer` and `json.NewEncoder()`.
-- Make a `POST` request to `apiURL + "/products"` with `"application/json"` content type using your custom `client`.
-- If the status code is not 201 Created (or 200 OK), return an error.
+---
 
-**3. `FetchProduct(apiURL string, id string) (Product, bool, error)`**
+**`CreateProduct(apiURL string, p Product) error`**
 
-- Instantiate the custom client with a 5-second timeout.
-- Make a `GET` request to `apiURL + "/products/" + id` using your custom `client`.
-- If the status code is 404 Not Found, return an empty `Product`, `false` (indicating not found), and `nil` error.
-- If the status code is 200 OK, decode the JSON response into a `Product` and return it with `true` (found) and `nil` error.
-- Return an error for any other status codes or networking issues.
+| Step | Action                                                                 |
+| ---- | ---------------------------------------------------------------------- |
+| 1    | Encode `p` to JSON using `bytes.Buffer` + `json.NewEncoder()`          |
+| 2    | `POST` → `apiURL + "/products"` with `"application/json"` content type |
+| 3    | Return error if status ≠ 201 Created (or 200 OK)                       |
 
-**4. `FetchMultipleProducts(apiURL string, ids []string) (map[string]Product, error)`**
+---
 
-- This function must fetch all requested IDs simultaneously using **Goroutines**.
-- Initialize a `map[string]Product` to store successfully fetched products.
-- Use a `sync.WaitGroup` to wait for all Goroutines.
-- Use a `sync.Mutex` to lock/unlock the map when inserting into it concurrently to avoid data races.
-- Inside each Goroutine, use `FetchProduct` to get the item. Only add the product to your map if it was successfully found (ignore 404s/errors for the sake of this quest).
+**`FetchProduct(apiURL string, id string) (Product, bool, error)`**
+
+| Status Code                   | Return                           |
+| ----------------------------- | -------------------------------- |
+| 200 OK                        | decoded `Product`, `true`, `nil` |
+| 404 Not Found                 | empty `Product`, `false`, `nil`  |
+| anything else / network error | zero value, `false`, `error`     |
+
+---
+
+**`FetchMultipleProducts(apiURL string, ids []string) (map[string]Product, error)`**
+
+| Step | Action                                                                       |
+| ---- | ---------------------------------------------------------------------------- |
+| 1    | Launch one Goroutine per ID using a `sync.WaitGroup`                         |
+| 2    | Inside each, call `FetchProduct` — skip 404s and errors                      |
+| 3    | Use a `sync.Mutex` to safely insert found products into `map[string]Product` |
 
 ### Inputs
 
